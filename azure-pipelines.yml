@@ -11,26 +11,10 @@ pr:
  drafts: false
 
 variables:
-  # Azure Resource Manager connection created during pipeline creation
-  - name: azureSubscription
-    displayName: Azure RM connection
-    type: string
-    default: devops-test-serviceconnection
-    
-  # Web app name
-  - name: webAppName
-    type: string
-    default: devops-testi-software1
-
-  # Environment name
-  - name: environmentName
-    type: string
-    default: devops-testi-plan
-
-  # Agent VM image name
-  - name: vmImageName
-    type: string
-    default: ubuntu-latest
+  azureSubscription: 'devops-test-serviceconnection'
+  webAppName: 'devops-testi-software1'
+  environmentName: 'devops-testi-plan'
+  vmImageName: 'ubuntu-latest'
 
 stages:
 - stage: Build
