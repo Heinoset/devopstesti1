@@ -16,10 +16,12 @@ parameters:
   # Web app name
   - name: webAppName
     type: string
+    default: devops-testi-software1
 
   # Environment name
   - name: environmentName
     type: string
+    default: devops-testi-plan
 
   # Agent VM image name
   - name: vmImageName
