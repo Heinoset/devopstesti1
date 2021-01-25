@@ -6,19 +6,25 @@
 trigger:
 - main
 
-variables:
-
+parameters:
   # Azure Resource Manager connection created during pipeline creation
-  azureSubscription: '{{ azureRmConnection.Id }}'
-
+  - name: azureSubscription
+    displayName: Azure RM connection
+    type: string
+    default: devops-test-serviceconnection
+    
   # Web app name
-  webAppName: '{{ webAppName }}'
+  - name: webAppName
+    type: string
 
   # Environment name
-  environmentName: '{{ webAppName }}'
+  - name: environmentName
+    type: string
 
   # Agent VM image name
-  vmImageName: 'ubuntu-latest'
+  - name: vmImageName
+    type: string
+    default: ubuntu-latest
 
 stages:
 - stage: Build
@@ -67,7 +73,7 @@ stages:
         deploy:
           steps:
           - task: AzureWebApp@1
-            displayName: 'Azure Web App Deploy: {{ webAppName }}'
+            displayName: 'Azure Web App Deploy: $(webAppName)'
             inputs:
               azureSubscription: $(azureSubscription)
               appType: webAppLinux
