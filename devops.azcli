@@ -1,0 +1,85 @@
+### Install JQ
+#apt install jq
+
+### Normal stuff
+az login
+az account set -s e84f9f23-2103-45a3-904a-68eb4fe51b2c
+#account=$(az account show)
+
+### Variables
+tenantId=$(az account show --query tenantId -o tsv)
+subscriptionId=$(az account show --query id -o tsv)
+subscriptionName=$(az account show --query name -o tsv)
+
+app="devops"
+env="test"
+location="westeurope"
+
+app1_rgName="rg-${app}-${env}-1"
+app2_rgName="rg-${app}-${env}-2"
+
+app1_servicePrincipalName="sp-${app}-${env}-1"
+app2_servicePrincipalName="sp-${app}-${env}-2"
+
+app1_serviceEndpointName="endpoint-${app}-${env}-1"
+app2_serviceEndpointName="endpoint-${app}-${env}-2"
+
+### Create RGs
+az group create --name $app1_rgName -l $location
+az group create --name $app2_rgName -l $location
+
+### Create service principal in AAD
+app1_servicePrincipalPassword=$(az ad sp create-for-rbac --name $app1_servicePrincipalName --role contributor --scopes /subscriptions/$subscriptionId/resourceGroups/$app1_rgName --query password --output tsv)
+app2_servicePrincipalPassword=$(az ad sp create-for-rbac --name $app2_servicePrincipalName --role contributor --scopes /subscriptions/$subscriptionId/resourceGroups/$app2_rgName --query password --output tsv)
+
+app1_servicePrincipalId=$(az ad sp show --id http://$app1_servicePrincipalName --query appId --output tsv)
+app2_servicePrincipalId=$(az ad sp show --id http://$app2_servicePrincipalName --query appId --output tsv)
+
+### Create DevOps service connector
+devopsOrg="https://dev.azure.com/heinoset/"
+devopsProject="devopstesti-github"
+
+export AZURE_DEVOPS_EXT_PAT=6qwrvk3dztfvl2zrco2t2lwpuv2xyvbyefjpcgn2zt3wupopdydq
+
+az extension add --name azure-devops --upgrade
+echo $AZURE_DEVOPS_EXT_PAT | az devops login --organization $devopsOrg
+#az devops configure --defaults organization=$devopsOrg project=$devopsProject
+
+export AZURE_DEVOPS_EXT_AZURE_RM_SERVICE_PRINCIPAL_KEY=$app1_servicePrincipalPassword
+
+app1_serviceEndpointId=$(az devops service-endpoint azurerm create \
+    --name $app1_serviceEndpointName \
+    --azure-rm-tenant-id $tenantId \
+    --azure-rm-service-principal-id $app1_servicePrincipalId \
+    --azure-rm-subscription-id $subscriptionId \
+    --azure-rm-subscription-name "$subscriptionName" \
+    --organization $devopsOrg \
+    --project $devopsProject \
+    --query id \
+    --output tsv)
+
+az devops service-endpoint update --id $app1_serviceEndpointId --project $devopsProject --enable-for-all true
+
+
+export AZURE_DEVOPS_EXT_AZURE_RM_SERVICE_PRINCIPAL_KEY=$app2_servicePrincipalPassword
+
+app2_serviceEndpointId=$(az devops service-endpoint azurerm create \
+    --name $app2_serviceEndpointName \
+    --azure-rm-tenant-id $tenantId \
+    --azure-rm-service-principal-id $app2_servicePrincipalId \
+    --azure-rm-subscription-id $subscriptionId \
+    --azure-rm-subscription-name "$subscriptionName" \
+    --organization $devopsOrg \
+    --project $devopsProject \
+    --query id \
+    --output tsv)
+
+az devops service-endpoint update --id $app2_serviceEndpointId --project $devopsProject --enable-for-all true
+
+# Service endpoint for codes
+az devops service-endpoint github create --github-url '<https://github.com/adbertram/ServerAutomationDemo>' --name 'GitHub'
+
+
+#######
+az keyvault secret set --name "ServerAutomationDemo-AppPw" --value $sp.password --vault-name "ServerAutomationDemo-KV"az keyvault secret set --name StandardVmAdminPassword --value "I like azure." --vault-name "ServerAutomationDemo-KV"
+az keyvault set-policy --name "ServerAutomationDemo-KV" --spn $spIdUri --secret-permissions get list
